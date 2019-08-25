@@ -1,0 +1,97 @@
+apply plugin: 'com.android.application'
+apply plugin: 'jacoco'
+jacoco {
+    toolVersion = "0.8.3"
+    // reportsDir = file("$buildDir/jacocoReport")
+}
+//tasks.withType(Test) {
+//    jacoco.includeNoLocationClasses = true
+//}
+project.afterEvaluate {
+
+    android.applicationVariants.all { variant ->
+        def variantName = variant.name
+        def testTaskName = "test${variantName.capitalize()}UnitTest"
+        def androidTestCoverageTaskName = "create${variantName.capitalize()}CoverageReport"
+        tasks.create(name: "${testTaskName}Coverage", type: JacocoReport, dependsOn: ["$testTaskName", "$androidTestCoverageTaskName"]) {
+
+            reports {
+                xml.enabled = true
+                html.enabled = true
+            }
+
+            def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
+            def debugTree = fileTree(dir: "$project.buildDir/intermediates/javac/debug", excludes: fileFilter)
+            def mainSrc = "$project.projectDir/src/main/java"
+
+            sourceDirectories = files([mainSrc])
+            classDirectories = files([debugTree])
+            executionData = fileTree(dir: project.buildDir, includes: [
+                    'jacoco/testDebugUnitTest.exec', 'outputs/code_coverage/debugAndroidTest/connected/**/*.ec'
+            ])
+        }
+
+//        tasks.create(name: "${testTaskName}Coverage", type: JacocoReport, dependsOn: ["$testTaskName", "$androidTestCoverageTaskName"]) {
+//            group = "Reporting"
+//            description = "Generate Jacoco coverage reports for the ${variantName.capitalize()} build."
+//
+//            reports {
+//                xml.enabled = false
+//                html.enabled = true
+//                html.destination "$buildDir/jacocoReport"
+//            }
+//
+//            def excludes = ['**/R*.class',
+//                            '**/*$InjectAdapter.class',
+//                            '**/*$ModuleAdapter.class',
+//                            '**/*$ViewInjector*.class'
+//            ]
+//
+//            def debugTree = fileTree(dir: "r : $project.buildDir/intermediates/javac", excludes: excludes)
+//            def mainSrc = "$project.projectDir/src/main/java"
+//
+//            sourceDirectories = files([mainSrc])
+//            classDirectories = files([debugTree])
+//            executionData = fileTree(dir: project.buildDir, includes: [
+//                    "jacoco/${testTaskName}.exec", "outputs/code_coverage/${variantName}AndroidTest/connected/**/*.ec"
+//            ])
+//        }
+    }
+}
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "com.hanaa.iti.testcoverage"
+        minSdkVersion 17
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        debug{
+            testCoverageEnabled true
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    testOptions {
+        unitTests.all {
+            jacoco {
+                includeNoLocationClasses = true
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:28.0.0'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
